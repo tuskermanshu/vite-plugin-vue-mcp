@@ -1,11 +1,10 @@
-import { devtools, devtoolsRouterInfo, devtoolsState, getInspector, stringify, toggleHighPerfMode } from '@vue/devtools-kit'
+import { devtools, devtoolsRouter, devtoolsRouterInfo, devtoolsState, getInspector, stringify, toggleHighPerfMode } from '@vue/devtools-kit'
 
 import { createRPCClient } from 'vite-dev-rpc'
 import { createHotContext } from 'vite-hot-client'
 
-
 const base = import.meta.env.BASE_URL || '/'
-const hot = createHotContext('',base)
+const hot = createHotContext('', base)
 const PINIA_INSPECTOR_ID = 'pinia'
 const COMPONENTS_INSPECTOR_ID = 'components'
 
@@ -97,6 +96,59 @@ const rpc = createRPCClient(
     // get router info
     async getRouterInfo(query) {
       rpc.onRouterInfoUpdated(query.event, JSON.stringify(devtoolsRouterInfo, null, 2))
+    },
+
+    async navigateRouter(query) {
+      // 检查路由器实例是否可用
+      if (!devtoolsRouter.value) {
+        console.warn('Router instance not available')
+        return
+      }
+
+      // 构建路由位置对象
+      const routeLocation = {
+        path: query.path || '/',
+      }
+
+      // 添加可选参数
+      if (query.query)
+        routeLocation.query = query.query
+      if (query.hash)
+        routeLocation.hash = query.hash
+      if (query.params)
+        routeLocation.params = query.params
+
+      try {
+        // 根据replace参数决定导航方式
+        const navigationMethod = query.replace ? 'replace' : 'push'
+
+        // 添加导航选项对象，处理force参数
+        const navigationOptions = {}
+        if (query.force === true) {
+          navigationOptions.force = true
+        }
+
+        // 执行导航并等待完成
+        await devtoolsRouter.value[navigationMethod](routeLocation, navigationOptions)
+
+        // 通知devtools路由已更新
+        devtools.ctx.hooks.callHook('routerInfoUpdated', {
+          state: devtoolsRouterInfo,
+        })
+
+        // 如果有事件回调，返回更新后的路由信息
+        if (query.event) {
+          rpc.onRouterInfoUpdated(query.event, JSON.stringify(devtoolsRouterInfo, null, 2))
+        }
+      }
+      catch (err) {
+        console.warn('Navigation failed:', err)
+
+        // 如果有事件回调，返回错误信息
+        if (query.event) {
+          rpc.onRouterInfoUpdated(query.event, JSON.stringify({ error: err.message }))
+        }
+      }
     },
     // get pinia tree
     async getPiniaTree(query) {

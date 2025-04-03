@@ -15,6 +15,13 @@ export interface RpcFunctions {
   highlightComponent: (options: { componentName: string }) => void
   // router
   getRouterInfo: (options: { event: string }) => void
+  navigateRouter: (options: {
+    path: string
+    query?: Record<string, string>
+    hash?: string
+    replace?: boolean
+    force?: boolean
+  }) => void
   onRouterInfoUpdated: (event: string, data: string) => void
   // pinia
   getPiniaState: (options: { event: string, storeName: string }) => void

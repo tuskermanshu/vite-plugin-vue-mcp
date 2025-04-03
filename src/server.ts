@@ -124,6 +124,29 @@ export function createMcpServerDefault(
   )
 
   server.tool(
+    'navigate-router',
+    'Navigate Vue Router with various options.',
+    {
+      path: z.string(),
+      query: z.record(z.string(), z.string()).optional(),
+      hash: z.string().optional(),
+      replace: z.boolean().optional(),
+      force: z.boolean().optional(),
+    },
+    async ({ path, query, hash, replace, force }) => {
+      return new Promise((resolve) => {
+        ctx.rpcServer.navigateRouter({ path, query, hash, replace, force })
+        resolve({
+          content: [{
+            type: 'text',
+            text: 'ok',
+          }],
+        })
+      })
+    },
+  )
+
+  server.tool(
     'get-pinia-state',
     'Get the Pinia state in JSON structure format.',
     {
